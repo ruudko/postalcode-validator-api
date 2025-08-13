@@ -45,7 +45,7 @@ public class PostCodeControllerTest {
     @Test
     void givenPostCountryCode_whenNotAvailable_thenReturnOk() throws Exception {
         when(postalCodeService.addPostalCodeValidatorForCountry(anyString())).thenReturn(mock(PostalCodeValidatorDTO.class));
-        this.mockMvc.perform(post("/api/v1/postalcodevalidator/nl")).andExpect(status().isOk());
+        this.mockMvc.perform(post("/api/v1/postalcodevalidator/nl")).andExpect(status().isCreated());
     }
     @Test
     void givenUnknownPostCountryCode_whenNotAvailable_thenReturnOk() throws Exception {
