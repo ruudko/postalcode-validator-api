@@ -1,10 +1,10 @@
 package net.koedooder.kvk.pva.service;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import net.koedooder.kvk.pva.model.PostalCode;
-import net.koedooder.kvk.pva.model.RestCountriesResult;
+import net.koedooder.kvk.pva.model.PostalCodeValidator;
+import net.koedooder.kvk.pva.model.PostalCodeValidatorDTO;
+import net.koedooder.kvk.pva.model.RestCountriesAPIResult;
 import net.koedooder.kvk.pva.repository.PostalCodeRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
 import java.util.Optional;
 
 @Service
@@ -22,6 +23,9 @@ public class PostalCodeService {
 
     @Value("${custom.restcountries.api.url}")
     private String restCountriesApiUrl;
+    @Value("${custom.restcountries.api.timeout_in_seconds:5}")
+    private int restCountriesApiTimeoutInSeconds;
+
     private WebClient restCountriesClient;
 
     public PostalCodeService(PostalCodeRepository postalCodeRepository,
@@ -40,31 +44,28 @@ public class PostalCodeService {
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
-    @Transactional
-    public PostalCode getPostalCodeInfo(final String countryCode){
-        Optional<PostalCode> postalCode = postalCodeRepository.findByCountryCode(countryCode);
-
-        if (postalCode.isPresent()) {
-            return postalCode.get();
-        } else {
-            RestCountriesResult restCountriesApiResult = getRestCountriesApiResult(countryCode);
-            PostalCode newPostalCode = new PostalCode();
-            newPostalCode.setCountryCode(countryCode);
-            newPostalCode.setPostalCodeFormat(restCountriesApiResult.getPostalCode().getFormat());
-            newPostalCode.setPostalCodeCheckRegex(restCountriesApiResult.getPostalCode().getRegex());
-            postalCodeRepository.save(newPostalCode);
-            return newPostalCode;
-        }
+    public Optional<PostalCodeValidatorDTO> getPostalCodeValidatorForCountry(final String countryCode){
+        return postalCodeRepository.findByCountryCode(countryCode).map(PostalCodeValidatorDTO::of);
+    }
+    public PostalCodeValidatorDTO addPostalCodeValidatorForCountry(final String countryCode){
+        RestCountriesAPIResult restCountriesApiResult = getRestCountriesApiResult(countryCode);
+        PostalCodeValidator newPostalCode = PostalCodeValidator.builder()
+                .postalCodeFormat(restCountriesApiResult.getPostalCode().getFormat())
+                .countryCode(countryCode)
+                .postalCodeCheckRegex(restCountriesApiResult.getPostalCode().getRegex())
+                .build();
+        postalCodeRepository.save(newPostalCode);
+        return PostalCodeValidatorDTO.of(newPostalCode);
     }
 
-    private RestCountriesResult getRestCountriesApiResult(String countryCode){
+    private RestCountriesAPIResult getRestCountriesApiResult (String countryCode){
         return restCountriesClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/{countryCode}/")
                         .queryParam("fields", "postalCode")
                         .build(countryCode))
                 .retrieve()
-                .bodyToMono(RestCountriesResult.class)
-                .block();
+                .bodyToMono(RestCountriesAPIResult.class)
+                .block(Duration.ofSeconds(restCountriesApiTimeoutInSeconds));
     }
 }
