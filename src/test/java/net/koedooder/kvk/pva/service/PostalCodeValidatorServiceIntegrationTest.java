@@ -1,8 +1,8 @@
 package net.koedooder.kvk.pva.service;
 
 
-import net.koedooder.kvk.pva.model.PostalCode;
-import net.koedooder.kvk.pva.model.RestCountriesResult;
+import net.koedooder.kvk.pva.model.PostalCodeValidatorDTO;
+import net.koedooder.kvk.pva.model.RestCountriesAPIResult;
 import net.koedooder.kvk.pva.repository.PostalCodeRepository;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -18,11 +18,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.io.IOException;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 
 @SpringBootTest
 @ContextConfiguration
-public class PostalCodeServiceIntegrationTest {
+public class PostalCodeValidatorServiceIntegrationTest {
     static MockWebServer mockBackEnd;
 
     @Autowired
@@ -49,18 +50,28 @@ public class PostalCodeServiceIntegrationTest {
     }
 
     @Test
-    public void givenUnknownCountryCode_whenGetPostalCode_thenReturnNewPostalCode(){
+    public void givenUnknownCountryCode_whenGetPostalCode_thenReturnEmpty(){
         Mockito.when(postalCodeRepository.findByCountryCode(any())).thenReturn(Optional.empty());
-
-        RestCountriesResult.builder()
-                .postalCode(RestCountriesResult.PostalCodeFormat.builder()
+        Optional<PostalCodeValidatorDTO> nlValidator = postalCodeService.getPostalCodeValidatorForCountry("nl");
+        assertTrue(nlValidator.isEmpty());
+    }
+    @Test
+    public void givenUnknownCountryCode_whenAddPostalCode_thenReturnNewPostalCode(){
+        RestCountriesAPIResult.builder()
+                .postalCode(RestCountriesAPIResult.PostalCodeFormat.builder()
                         .format("").regex("").build()).build();
         mockBackEnd.enqueue(new MockResponse()
                 .setBody("{\"postalCode\":{\"format\":\"#### @@\",\"regex\":\"^(\\\\d{4}[A-Z]{2})$\"}}")
                 .addHeader("Content-Type", "application/json"));
-        PostalCode nl = postalCodeService.getPostalCodeInfo("nl");
+        PostalCodeValidatorDTO nlValidator = postalCodeService.addPostalCodeValidatorForCountry("nl");
 
-        Assertions.assertEquals("^(\\d{4}[A-Z]{2})$", nl.getPostalCodeCheckRegex());
-        Assertions.assertEquals("#### @@", nl.getPostalCodeFormat());
+        assertEquals("^(\\d{4}[A-Z]{2})$", nlValidator.getPostalCodeCheckRegex());
+        assertEquals("#### @@", nlValidator.getPostalCodeFormat());
+        assertEquals("nl", nlValidator.getCountryCode());
+    }
+    @Test
+    public void givenUnknownCountryCode_whenAPITimout_thenReturnServiceUnavailable(){
+        //stop mock http server
+        //request, check http code 503
     }
 }
