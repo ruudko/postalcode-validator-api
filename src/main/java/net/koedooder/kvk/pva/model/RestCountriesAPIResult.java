@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class RestCountriesResult {
+public class RestCountriesAPIResult {
     private PostalCodeFormat postalCode;
 
     @Data
