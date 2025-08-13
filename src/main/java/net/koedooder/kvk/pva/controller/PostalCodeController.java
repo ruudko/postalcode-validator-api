@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import net.koedooder.kvk.pva.exceptions.PostalCodeValidatorNotFoundException;
-import net.koedooder.kvk.pva.model.PostalCodeValidator;
 import net.koedooder.kvk.pva.model.PostalCodeValidatorDTO;
 import net.koedooder.kvk.pva.service.PostalCodeService;
 import net.koedooder.kvk.pva.validation.CountryCodeConstraint;
