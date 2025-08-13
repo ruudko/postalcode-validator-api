@@ -1,10 +1,10 @@
-package net.koedooder.kvk.postalcode_validator_api;
+package net.koedooder.kvk.pva;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class PostalcodeValidatorApiApplicationTests {
+class PostalCodeValidatorApiApplicationTests {
 
 	@Test
 	void contextLoads() {
